@@ -7,7 +7,7 @@ importScripts('lib/tank.js');
 // In that way, turning will be sustained for several steps of
 // the simulation
 var turnTime;
-
+  
 // SHOOT ENEMY ---------------------------------------------------------------------------------
 function shootEnemy(state, control) {
   let enemy = state.radar.enemy;
@@ -29,6 +29,14 @@ function shootEnemy(state, control) {
   // point the gun at the target9
   let angleDiff = Math.deg.normalize(gunAngle - state.gun.angle);
   control.GUN_TURN = 0.3 * angleDiff;
+
+  //variate shoot force
+  if (distance>=150)
+    bulletPower=1;
+  if(distance <150 || distance >=50)
+    bulletPower=0.3;
+  if(distance <50)
+    bulletPower =0.1;
 
   // shoot when aiming at target
   if(Math.abs(angleDiff) < 1) {
@@ -131,7 +139,7 @@ function exploreBattlefiield(state, control) {
 
   if(state.collisions.wall) {
     // start turning when hitting a wall
-    turnTime = 10;
+    turnTime = 50;
   }
 
   // keep turning whenever turn timer is above zero
