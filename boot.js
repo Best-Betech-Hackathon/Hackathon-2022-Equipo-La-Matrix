@@ -109,8 +109,8 @@ function scanEnemy(state, control) {
   }
 }
 
-// FOLLOW ENEMY ---------------------------------------------------------------------------------
-function followEnemy(state, control) {
+// COMBAT ENEMY ---------------------------------------------------------------------------------
+function performDodgeCombat(state, control) {
   if(!state.radar.enemy) {
     return;
   }
@@ -163,6 +163,6 @@ tank.init(function(settings, info) {
 tank.loop(function(state, control) {
   shootEnemy(state, control);
   scanEnemy(state, control);
-  followEnemy(state, control);
+  performDodgeCombat(state, control);
   exploreBattlefiield(state, control);
 });
