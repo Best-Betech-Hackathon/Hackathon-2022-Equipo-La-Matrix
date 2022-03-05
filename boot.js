@@ -41,12 +41,63 @@ function scanEnemy(state, control) {
   if(!state.radar.enemy) {
     // scan around for the enemy
     control.RADAR_TURN = 1;
-  } else {
-    //keep the enemy in the middle of radar beam
-    let targetAngle = Math.deg.atan2(state.radar.enemy.y - state.y, state.radar.enemy.x - state.x);
-    let radarAngle = Math.deg.normalize(targetAngle - state.angle);
-    let angleDiff = Math.deg.normalize(radarAngle - state.radar.angle);
-    control.RADAR_TURN = angleDiff;
+    return
+  }
+  
+  //keep the enemy in the middle of radar beam
+  let targetAngle = Math.deg.atan2(state.radar.enemy.y - state.y, state.radar.enemy.x - state.x);
+  let radarAngle = Math.deg.normalize(targetAngle - state.angle);
+  let angleDiff = Math.deg.normalize(radarAngle - state.radar.angle);
+  control.RADAR_TURN = angleDiff;
+
+  // find bullets using radar
+  for(i in state.radar.bullets) {
+    bullet = state.radar.bullets[i];
+    bullet.age = 0;
+    bulletMap[bullet.id] = bullet;
+
+    // calculate velocity components and distance between bullet and the tank
+    bullet.vx = bullet.speed * Math.cos(bullet.angle*(Math.PI/180));
+    bullet.vy = bullet.speed * Math.sin(bullet.angle*(Math.PI/180));
+    bullet.tankDistance = Math.distance(state.x, state.y, bullet.x, bullet.y);
+  }
+
+  var bulletCount = 0;
+  // predict position of all bullets scanned so far
+  for(i in bulletMap) {
+    bullet = bulletMap[i];
+    if(!bullet) continue;
+    // skip bullets that was not updated for long time
+    // if they were not spotted by radar recently, they
+    // probably are too far or hit something
+    if(bullet.age > 50) {
+      bulletMap[i] = null;
+      continue;
+    }
+    // track age of the bullet so they can be removed if out-dated
+    bullet.age++;
+    // predict position of the bullet basing on its velocity
+    bullet.x += bullet.vx;
+    bullet.y += bullet.vy;
+    // calculate distance between bullet and the tank. It will be used to
+    // find how fast the distance is changing
+    var newDistance = Math.distance(state.x, state.y, bullet.x, bullet.y);
+    bullet.approachingSpeed = bullet.tankDistance - newDistance;
+    bullet.tankDistance = newDistance;
+
+    // If distance between tank and the bullet is negative, it means that it
+    // is moving away from the tank and can be ignored (if will not hit it)
+    //
+    // In addition, if the speed of approaching the tank is too low, it means
+    // that the trajectory of the bullet is away of the tank and it will
+    // not hit it. Such bullets can be ignored too. The threshold value set
+    // experimentally to 3.85
+    if(bullet.approachingSpeed < 3.85) {
+      bulletMap[i] = null;
+      continue;
+    }
+    // count how many bullets are really dangerous and will probably hit the tank
+    bulletCount++;
   }
 }
 
@@ -95,7 +146,10 @@ function exploreBattlefiield(state, control) {
 // -------------------------------------------------------------------------------------------
 tank.init(function(settings, info) {
   // do not turn at the beginning
-turnTime = 0;
+  turnTime = 0;
+
+  settings.SKIN = 'lava';
+  bulletMap = [];
 });
 
 tank.loop(function(state, control) {
